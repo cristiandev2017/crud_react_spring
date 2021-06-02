@@ -14,4 +14,5 @@
 11. Que funcion o para que sirve el StoreProvider
 12. Que hace fetch, para que se utiliza.
 13. Para que sirve el useState
-14. Para que sirve el eventPreventDefault
+14. Para que sirve el eventPreventDefault.
+15. Porque es importante tener el elemento @CrossOrigin en el controlador?
