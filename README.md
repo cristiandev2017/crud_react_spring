@@ -10,3 +10,8 @@
 7. ¿Que permite el GeneratedValue?
 8. Para que sirve el elemento @RestController
 9. Mencione 2 Mapping (Pista HTTP)
+10. Para que sirve el Store
+11. Que funcion o para que sirve el StoreProvider
+12. Que hace fetch, para que se utiliza.
+13. Para que sirve el useState
+14. Para que sirve el eventPreventDefault

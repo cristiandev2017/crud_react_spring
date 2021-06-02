@@ -4,7 +4,8 @@ import './App.css';
 const HOST_API = "http://localhost:8080/api"
 //Aca ponemos las listas o variables que usaremos en el transcurso del programa
 const initialState = {
-  list : []
+  list : [],
+  item:{}
 }
 
 //La variable Store sera de tipo contexto y me permitira almacenar los estados internos de la aplicacion
@@ -16,8 +17,8 @@ const Form = () =>{
   //Este hook nos permite identificar las propiedades de un componente en especifico. se inicializa cuando el componente es montado.
   const formRef = useRef(null);
   //Aca usaremos un estado interno por medio del Hook useState
-  const {dispatch} = useContext(Store);
-  const [state, setState ] = useState({});
+  const {dispatch,state: {item}} = useContext(Store);
+  const [state,setState] =useState(item);
 
   const onAdd = (event) =>{
     //Esto evita que se recargue la pagina y asi tener los elementos en la misma vista.
@@ -45,11 +46,37 @@ const Form = () =>{
     });
   }
 
+    //Este me permitira editar
+    const onEdit = (event) =>{
+    event.preventDefault();
+
+    const request = {
+      name:state.name,
+      id: item.id,
+      isCompleted: item.isCompleted
+    };
+    //Ejecutara el metodo PUT para actualizar los datos en el onEdit
+    fetch(HOST_API+"/todo",{
+      method: "PUT",
+      body: JSON.stringify(request),
+      headers:{
+        'Content-Type':'application/json'
+      }
+    })
+    .then(response=>response.json())
+    .then((todo)=>{
+      dispatch({type: "update-item",item:todo});
+      setState({name:""});
+      formRef.current.reset();
+    });
+  }
+
     return <form ref={formRef}>
-      <input type="text" name="name" onChange={(event)=>{
+     <input type="text" name="name" defaultValue={item.name} onChange={(event)=>{
         setState({...state, name: event.target.value})  
       }}></input>
-      <button onClick={onAdd}>Agregar</button>  
+      { item.id && <button onClick={onEdit}>Actualizar</button> }
+      { !item.id &&  <button onClick={onAdd}>Agregar</button> }   
     </form>
 }
 
@@ -57,14 +84,26 @@ const Form = () =>{
 const List = () =>{
   const {dispatch,state} = useContext(Store);
 
- useEffect(()=>{
+  useEffect(()=>{
     fetch(HOST_API+"/todos")
     .then(response=>response.json())
     .then((list)=>{
       dispatch({type:"update-list", list})
     })
   }, [state.list.length, dispatch]);
-
+  //Esta constante o componente lo que hara es permitir borrar por medio de un ID
+  const onDelete = (id) =>{
+    fetch(HOST_API + "/"+id+"/todo",{
+      method: "DELETE"
+    })
+    .then((list)=>{
+      dispatch({type:"delete-item",id})
+    })
+  };
+  
+  const onEdit = (todo) =>{
+  dispatch({type:"edit-item",item: todo})
+  }
   return <div>
            <table>
              <thead>
@@ -80,26 +119,44 @@ const List = () =>{
                return <tr key={todo.id}>
                        <td>{todo.id}</td>
                        <td>{todo.name}</td>
-                       <td>{todo.isCompleted}</td>
+                       <td>{todo.isCompleted === true ? "SI" : "NO"}</td>
+                       <td><button onClick={()=>onDelete(todo.id)}>Eliminar</button></td>
+                       <td><button onClick={()=>onEdit(todo)}>Editar</button></td>
                       </tr>
              })}
            </tbody>
        </div> 
 }
 
-  function reducer(state, action){
-    switch (action.type) {
-      case 'update-list':
-        return {...state, list:action.list}
-      case 'add-item':
-        //Obtiene el estado reciente y en base a ese agrega uno nuevo con el push
-        const newList = state.list;
-        newList.push(action.item);
-        return {...state,list:newList}
-      default:
-        return state;
-    }
+//Una funcion reduce es una funcion pura,dado una entrada recibira la misma salida de esa entrada
+//Argumentos son entrada  
+function reducer(state,action){
+  switch(action.type){
+    case 'update-item':
+      const listUpdateEdit = state.list.map((item)=>{
+        if(item.id === action.item.id){
+           return action.item;
+        }
+        return item;
+      });
+      return {...state,list: listUpdateEdit, item: {}}        
+    case 'delete-item':
+      const listUpdate = state.list.filter((item)=>{
+        return item.id !== action.id;
+      });
+      return {...state,list:listUpdate}
+    case 'update-list':
+      return {...state,list:action.list}
+    case 'edit-item':
+      return {...state,item:action.item}
+    case 'add-item':
+      const newList = state.list;
+      newList.push(action.item);
+      return {...state,list: newList}
+    default:
+      return state;
   }
+}
 
 const StoreProvider = ({ children}) => {
   
